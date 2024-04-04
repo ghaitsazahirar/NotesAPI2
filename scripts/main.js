@@ -1,5 +1,6 @@
 import './note-item';
 import './note-list';
+import dummyNotes from "./data/data";
 
 function main (){
     const notesData = 'https://notes-api.dicoding.dev/v2#/';
@@ -104,10 +105,10 @@ function main (){
 
     document.addEventListener('DOMContentLoaded', function () {
         const noteList = document.getElementById('note-list');
-        const nomerInput = document.getElementById('#inputNotesNum')
-        const judulInput = document.getElementById('#inputNotesTitle');
-        const descInput = document.getElementById('#inputNotesBody');
-        const btnSubmit = document.getElementById('#buttonSave');
+        const nomerInput = document.getElementById('inputNotesNum')
+        const judulInput = document.getElementById('inputNotesTitle');
+        const descInput = document.getElementById('inputNotesBody');
+        const btnSubmit = document.getElementById('buttonSave');
       
         loadNotesFromStorage();
       
@@ -119,7 +120,7 @@ function main (){
       
           if (number && title && body) {
             const note = { number, title, body };
-            notesData.unshift(note);
+            dummyNotes.unshift(note);
       
             const noteElement = createNotes(number, title, body);
             const noteListShadow = noteList.shadowRoot;
@@ -206,7 +207,7 @@ function main (){
         }
       
         function loadNotesFromDummyData() {
-          notesData.forEach(note => {
+            dummyNotes.forEach(note => {
             const noteElement = createNoteDummyElement(note);
             // const noteListShadow = noteList.shadowRoot;
             noteList.appendChild(noteElement);
