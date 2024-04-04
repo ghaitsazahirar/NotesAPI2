@@ -5,27 +5,22 @@ import dummyNotes from "./data/data";
 function main (){
     const notesData = 'https://notes-api.dicoding.dev/v2#/';
     const getNotes = () => {
-        fetch(`${notesData}/notes`)
-        .then(response => {
-            return response.json();
-        })
-        .then(responeJson => {
-            if(responeJson.error){
-                showErrorResponse(responseJson.message);
-            } else {
-                renderNotes(responeJson.notes);
-            }
-        })
-        .catch(error => {
-            showErrorResponse(error);
-        })
-    }
+        fetch(notesData + '/notes')
+           .then(response => response.json())
+           .then(notes => {
+                dummyNotes.unshift(createNotes());
+                renderNotes(notes);
+            })
+           .catch(error => {
+                showErrorResponse(error);
+            });
+    };
 
     const createNotes = () => {
         fetch(`${notesData}/notes`, {
             method: 'POST', 
-            title: JSON.stringify(notes),
-            body: JSON.stringify(notes)
+            title: JSON.stringify(inputNotesTitle),
+            body: JSON.stringify(inputNotesBody)
         })
         .then(response => {
             return response.json();
@@ -90,7 +85,7 @@ function main (){
             noteItem.note = notes;
             const shadowRoot = noteItem.shadowRoot;
 
-            const notesItem = shadowRoot.querySelectorAll('note-item');
+            const notesItem = shadowRoot.querySelector('note-item');
             notesItem.forEach((notesItem, index) => {
                 const deleteButton = notesItem.querySelector('.btnDelete');
 
@@ -141,7 +136,7 @@ function main (){
       
           if (number && title && body) {
             const note = { number, title, body };
-            notesData.unshift(note);
+            dummyNotes.unshift(note);
       
             const noteElement = createNotes(number, title, body);
             const noteListShadow = noteList.shadowRoot;
