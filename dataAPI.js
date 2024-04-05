@@ -6,7 +6,7 @@ const notesData = 'https://notes-api.dicoding.dev/v2';
 function dataAPI() {
     //getNotes non archived
     const getNotes = () => {
-        const loadingIndicator = document.querySelector('loading-indicator');
+        const loadingIndicator = document.querySelector("loading-indicator");
         loadingIndicator.style.display = "block";
     
         let noteList = document.getElementById("note-list");
