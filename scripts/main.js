@@ -10,42 +10,40 @@ document.addEventListener('DOMContentLoaded', function () {
   const inputDesc = document.getElementById('inputNotesBody');
   const btnSubmit = document.getElementById('buttonSave');
 
-  
-function displayNotes(notes) {
-  console.log('displayNotes function is called with notes:', notes);
-  noteList.innerHTML = ''; // Kosongkan noteList sebelum menampilkan catatan baru
-  notes.forEach(note => {
-    const noteElement = createNoteElement(note.id, note.title, note.body); // Menggunakan createNoteElement
-    noteList.appendChild(noteElement);
-  });
-}
+  function displayNotes(notes) {
+    console.log('displayNotes function is called with notes:', notes);
+    noteList.innerHTML = ''; // Kosongkan noteList sebelum menampilkan catatan baru
+    notes.forEach(note => {
+      const noteElement = createNoteElement(note.id, note.title, note.body); // Menggunakan createNoteElement
+      noteList.appendChild(noteElement);
+    });
+  }
 
-displayNotesOutside = displayNotes;
+  displayNotesOutside = displayNotes;
 
   const api = dataAPI(); // Panggil dataAPI() dan simpan instance-nya
   api.getNotes().then(notes => { // Gunakan then di sini
     displayNotes(notes);
   });
 
-
   const customValidationHandler = (event) => {
     event.target.setCustomValidity('');
-  
+
     if (event.target.validity.valueMissing) {
       event.target.setCustomValidity('Fill this.');
       return;
     }
   };
-  
+
   const handleValidation = (event) => {
     const isValid = event.target.validity.valid;
     const errorMessage = event.target.validationMessage;
-  
+
     const connectedValidationId = event.target.getAttribute('aria-describedby');
     const connectedValidationEl = connectedValidationId
       ? document.getElementById(connectedValidationId)
       : null;
-  
+
     if (connectedValidationEl) {
       if (errorMessage && !isValid) {
         connectedValidationEl.innerText = errorMessage;
@@ -54,16 +52,16 @@ displayNotesOutside = displayNotes;
       }
     }
   }
-  
+
   inputId.addEventListener('change', customValidationHandler);
   inputId.addEventListener('invalid', customValidationHandler);
-  
+
   inputTitle.addEventListener('change', customValidationHandler);
   inputTitle.addEventListener('invalid', customValidationHandler);
-  
+
   inputDesc.addEventListener('change', customValidationHandler);
   inputDesc.addEventListener('invalid', customValidationHandler);
-  
+
   inputTitle.addEventListener('blur', handleValidation);
   inputDesc.addEventListener('blur', handleValidation);
   inputId.addEventListener('blur', handleValidation);
@@ -75,87 +73,76 @@ displayNotesOutside = displayNotes;
     const body = inputDesc.value.trim();
 
     if (id && title && body) {
-        dataAPI().createNotes(id, title, body)
-            .then(() => {
-                // Setelah berhasil menambahkan catatan, panggil API untuk mendapatkan catatan yang diperbarui
-                return dataAPI().getNotes();
-            })
-            .then(notes => {
-                // Setelah mendapatkan catatan yang diperbarui, perbarui tampilan
-                displayNotes(notes);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+      api.createNotes(id, title, body)
+        .then(() => {
+          return api.getNotes();
+        })
+        .then(notes => {
+          displayNotes(notes);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
 
-        // Tambahkan catatan baru ke dalam tampilan
-        const noteElement = createNoteElement(id, title, body);
-        noteList.appendChild(noteElement);
-
-        inputId.value = '';
-        inputTitle.value = '';
-        inputDesc.value = '';
+      inputId.value = '';
+      inputTitle.value = '';
+      inputDesc.value = '';
     }
-});
+  });
 
+  btnSubmit.addEventListener('click', function (event) {
+    event.preventDefault(); // Prevent the default form submission behavior
 
-btnSubmit.addEventListener('click', function(event) {
-  event.preventDefault(); // Prevent the default form submission behavior
+    const id = inputId.value.trim();
+    const title = inputTitle.value.trim();
+    const body = inputDesc.value.trim();
+    if (id && title && body) {
+      api.createNotes(id, title, body)
+        .then(() => {
+          return api.getNotes();
+        })
+        .then(notes => {
+          displayNotes(notes);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
 
-  const id = inputId.value.trim();
-  const title = inputTitle.value.trim();
-  const body = inputDesc.value.trim();
-  if (id && title && body) {
-    dataAPI().createNotes(id, title, body)
-      .then(() => {
-        return dataAPI().getNotes();
-      })
-      .then(notes => {
-        displayNotes(notes);
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
+      inputId.value = '';
+      inputTitle.value = '';
+      inputDesc.value = '';
+    }
+  });
 
-    inputId.value = '';
-    inputTitle.value = '';
-    inputDesc.value = '';
+  function createNoteElement(id, title, body) {
+    const ElementNotesData = document.createElement('div');
+    ElementNotesData.classList.add('note-list');
+    ElementNotesData.setAttribute('data-id', id);
+    ElementNotesData.setAttribute('data-title', title);
+    ElementNotesData.setAttribute('data-desc', body);
+
+    const ElementNote = document.createElement('div');
+    ElementNote.classList.add('note');
+
+    const idElement = document.createElement('h2');
+    idElement.textContent = id;
+
+    const titleElement = document.createElement('h2');
+    titleElement.textContent = title;
+
+    const bodyElement = document.createElement('p');
+    bodyElement.textContent = body;
+
+    ElementNote.appendChild(idElement);
+    ElementNote.appendChild(titleElement);
+    ElementNote.appendChild(bodyElement);
+
+    ElementNotesData.appendChild(ElementNote);
+
+    noteList.appendChild(ElementNotesData); // Menambahkan catatan baru ke dalam tampilan DOM
+    console.log('New note element added to noteList:', ElementNotesData);
+    return ElementNotesData;
   }
-});
-
-
-
-function createNoteElement(id, title, body) {
-  const ElementNotesData = document.createElement('div');
-  ElementNotesData.classList.add('note-list');
-  ElementNotesData.setAttribute('data-id', id);
-  ElementNotesData.setAttribute('data-title', title);
-  ElementNotesData.setAttribute('data-desc', body);
-
-  const ElementNote = document.createElement('div');
-  ElementNote.classList.add('note');
-
-  const idElement = document.createElement('h2');
-  idElement.textContent = id;
-
-  const titleElement = document.createElement('h2');
-  titleElement.textContent = title;
-
-  const bodyElement = document.createElement('p');
-  bodyElement.textContent = body;
-
-  ElementNote.appendChild(idElement);
-  ElementNote.appendChild(titleElement);
-  ElementNote.appendChild(bodyElement);
-
-  ElementNotesData.appendChild(ElementNote);
-
-  noteList.appendChild(ElementNotesData); // Menambahkan catatan baru ke dalam tampilan DOM
-  console.log('New note element added to noteList:', ElementNotesData);
-  return ElementNotesData;
-}
-
-console.log(createNoteElement);
 
 function createNoteDummyElement(noteData) {
   const { id, title, body } = noteData;
