@@ -2,6 +2,7 @@
 import dummyNotes from './data/data.js';
 import dataAPI from "./data/dataAPI.js";
 
+let displayNotesOutside;
 document.addEventListener('DOMContentLoaded', function () {
   const noteList = document.getElementById('note-list');
   const inputId = document.querySelector('#inputNoteNum');
@@ -9,19 +10,25 @@ document.addEventListener('DOMContentLoaded', function () {
   const inputDesc = document.getElementById('inputNotesBody');
   const btnSubmit = document.getElementById('buttonSave');
 
-  dataAPI().getNotes(noteList); // Meneruskan referensi noteList ke dalam getNotes
-
-  function displayDummyNotes() {
-    dummyNotes.forEach(note => {
-      const noteElement = createNoteElement(note.id, note.title, note.body);
-      noteList.appendChild(noteElement);
-    });
-  }
-
-  // Panggil fungsi untuk menampilkan catatan dummy saat DOM dimuat
-  displayDummyNotes();
   
-const customValidationHandler = (event) => {
+function displayNotes(notes) {
+  console.log('displayNotes function is called with notes:', notes);
+  noteList.innerHTML = ''; // Kosongkan noteList sebelum menampilkan catatan baru
+  notes.forEach(note => {
+    const noteElement = createNoteElement(note.id, note.title, note.body); // Menggunakan createNoteElement
+    noteList.appendChild(noteElement);
+  });
+}
+
+displayNotesOutside = displayNotes;
+
+  const api = dataAPI(); // Panggil dataAPI() dan simpan instance-nya
+  api.getNotes().then(notes => { // Gunakan then di sini
+    displayNotes(notes);
+  });
+
+
+  const customValidationHandler = (event) => {
     event.target.setCustomValidity('');
   
     if (event.target.validity.valueMissing) {
@@ -61,8 +68,6 @@ const customValidationHandler = (event) => {
   inputDesc.addEventListener('blur', handleValidation);
   inputId.addEventListener('blur', handleValidation);
 
-  loadNotesFromStorage();
-
   noteList.addEventListener('submit', (event) => {
     event.preventDefault();
     const id = inputId.value.trim();
@@ -70,123 +75,121 @@ const customValidationHandler = (event) => {
     const body = inputDesc.value.trim();
 
     if (id && title && body) {
-        const note = { id, title, body };
-        dummyNotes.unshift(note);
+        dataAPI().createNotes(id, title, body)
+            .then(() => {
+                // Setelah berhasil menambahkan catatan, panggil API untuk mendapatkan catatan yang diperbarui
+                return dataAPI().getNotes();
+            })
+            .then(notes => {
+                // Setelah mendapatkan catatan yang diperbarui, perbarui tampilan
+                displayNotes(notes);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
 
+        // Tambahkan catatan baru ke dalam tampilan
         const noteElement = createNoteElement(id, title, body);
-        noteList.prepend(noteElement); // Ubah noteList.shadowRoot menjadi noteList
+        noteList.appendChild(noteElement);
 
         inputId.value = '';
         inputTitle.value = '';
         inputDesc.value = '';
-
-        saveNoteToStorage(id, title, body);
     }
 });
 
 
-  btnSubmit.addEventListener('click', function(){
-    const id = inputId.value.trim();
-    const title = inputTitle.value.trim();
-    const body = inputDesc.value.trim();
+btnSubmit.addEventListener('click', function(event) {
+  event.preventDefault(); // Prevent the default form submission behavior
 
-    if (id, title && body) {
-      const note = { id, title, body };
-      dummyNotes.unshift(note);
+  const id = inputId.value.trim();
+  const title = inputTitle.value.trim();
+  const body = inputDesc.value.trim();
+  if (id && title && body) {
+    dataAPI().createNotes(id, title, body)
+      .then(() => {
+        return dataAPI().getNotes();
+      })
+      .then(notes => {
+        displayNotes(notes);
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
 
-      const noteElement = createNoteElement(id, title, body);
-      const noteListShadow = noteList.shadowRoot;
-      noteListShadow.prepend(noteElement);
-
-      inputId.value = ''
-      inputTitle.value = '';
-      inputDesc.value = '';
-
-      dataAPI().createNotes(id, title, body);
-      saveNoteToStorage(id, title, body);
-    }
-  });
-
-  function saveNoteToStorage(id, title, body) {
-    const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    notes.push({ id: id, judul: title, deskripsi: body });
-    localStorage.setItem('notes', JSON.stringify(notes));
-
-    console.log(`new notes with title '${title}' added.`);
+    inputId.value = '';
+    inputTitle.value = '';
+    inputDesc.value = '';
   }
+});
 
-  function loadNotesFromStorage() {
-    const notes = JSON.parse(localStorage.getItem('notes')) || [];
-    notes.forEach(note => {
-      const noteElement = createNoteElement(note.id, note.judul, note.deskripsi);
-      const noteListShadow = noteList.shadowRoot;
-      noteListShadow.appendChild(noteElement);
-    });
-  }
 
-  function createNoteElement(id, title, body) {
-    const ElementNotesData = document.createElement('div');
-    ElementNotesData.classList.add('note-list');
-    ElementNotesData.setAttribute('data-id', id);
-    ElementNotesData.setAttribute('data-title', title);
-    ElementNotesData.setAttribute('data-desc', body);
 
-    const ElementNote = document.createElement('note-item');
-    ElementNote.setNote({ id, title, body });
+function createNoteElement(id, title, body) {
+  const ElementNotesData = document.createElement('div');
+  ElementNotesData.classList.add('note-list');
+  ElementNotesData.setAttribute('data-id', id);
+  ElementNotesData.setAttribute('data-title', title);
+  ElementNotesData.setAttribute('data-desc', body);
 
-    const elementNote = document.createElement('div');
-    elementNote.classList.add('note');
+  const ElementNote = document.createElement('div');
+  ElementNote.classList.add('note');
 
-    const idElement = document.createElement('h2');
-    idElement.textContent = id;
+  const idElement = document.createElement('h2');
+  idElement.textContent = id;
 
-    const titleElement = document.createElement('h2');
-    titleElement.textContent = title;
+  const titleElement = document.createElement('h2');
+  titleElement.textContent = title;
 
-    const bodyElement = document.createElement('p');
-    bodyElement.textContent = body;
+  const bodyElement = document.createElement('p');
+  bodyElement.textContent = body;
 
-    elementNote.appendChild(idElement);
-    elementNote.appendChild(titleElement);
-    elementNote.appendChild(bodyElement);
+  ElementNote.appendChild(idElement);
+  ElementNote.appendChild(titleElement);
+  ElementNote.appendChild(bodyElement);
 
-    ElementNotesData.appendChild(ElementNote);
+  ElementNotesData.appendChild(ElementNote);
 
-    return ElementNotesData;
-  }
+  noteList.appendChild(ElementNotesData); // Menambahkan catatan baru ke dalam tampilan DOM
+  console.log('New note element added to noteList:', ElementNotesData);
+  return ElementNotesData;
+}
 
-  function createNoteDummyElement(noteData) {
-    const { id, title, body } = noteData;
+console.log(createNoteElement);
 
-    const ElementNote = document.createElement('note-item');
-    ElementNote.setNote({ id, title, body });
+function createNoteDummyElement(noteData) {
+  const { id, title, body } = noteData;
 
-    const ElementNotesData =document.createElement('div');
-    ElementNotesData.classList.add('note-list');
-    ElementNotesData.setAttribute('data-id', id);
-    ElementNotesData.setAttribute('data-title', title);
-    ElementNotesData.setAttribute('data-desc', body);
+  const ElementNote = document.createElement('note-item');
+  ElementNote.setNote({ id, title, body });
 
-    const elementNote = document.createElement('div');
-    elementNote.classList.add('note');
+  const ElementNotesData = document.createElement('div');
+  ElementNotesData.classList.add('note-list');
+  ElementNotesData.setAttribute('data-id', id);
+  ElementNotesData.setAttribute('data-title', title);
+  ElementNotesData.setAttribute('data-desc', body);
 
-    const idElement = document.createElement('h2');
-    idElement.textContent = id;
+  const elementNote = document.createElement('div');
+  elementNote.classList.add('note');
 
-    const titleElement = document.createElement('h2');
-    titleElement.textContent = title;
+  const idElement = document.createElement('h2');
+  idElement.textContent = id;
 
-    const bodyElement = document.createElement('p');
-    bodyElement.textContent = body;
+  const titleElement = document.createElement('h2');
+  titleElement.textContent = title;
 
-    elementNote.appendChild(idElement);
-    elementNote.appendChild(titleElement);
-    elementNote.appendChild(bodyElement);
+  const bodyElement = document.createElement('p');
+  bodyElement.textContent = body;
 
-    ElementNotesData.appendChild(ElementNote);
+  elementNote.appendChild(idElement);
+  elementNote.appendChild(titleElement);
+  elementNote.appendChild(bodyElement);
 
-    return ElementNotesData;
-  }
+  ElementNotesData.appendChild(ElementNote);
+
+  return ElementNotesData;
+}
+
 
   function loadNotesFromDummyData() {
     dummyNotes.forEach(note => {
@@ -196,9 +199,17 @@ const customValidationHandler = (event) => {
     });
   }
   console.log(dummyNotes);
+  console.log(noteList);
   loadNotesFromDummyData();
+}); 
 
-});
+function removeNoteFromList(noteElement) {
+  noteElement.remove();
+  // Panggil getNotes untuk mengambil data terbaru dari API setelah menghapus catatan
+  dataAPI().getNotes().then(notes => {
+    displayNotesOutside(notes);
+  });
+}
 
 class NoteItem extends HTMLElement {
     constructor() {
@@ -263,8 +274,13 @@ class NoteItem extends HTMLElement {
       </div>
       `;
     
-      const buttonDelete = this.shadowRoot.querySelector('.button-delete');
-      buttonDelete.addEventListener('click', this.handleDelete);
+      
+const buttonDelete = this.shadowRoot.querySelector('.button-delete');
+buttonDelete.addEventListener('click', () => {
+    removeNoteFromList(this.parentNode); // Menghapus catatan dari DOM
+    this.handleDelete();
+});
+
     }
   }
   
