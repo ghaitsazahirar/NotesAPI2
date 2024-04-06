@@ -1,42 +1,34 @@
 import '../loading-indicator';
 import '../main';
 
-const notesData = 'https://notes-api.dicoding.dev/v2';
 
 function dataAPI() {
-    //getNotes non archived
-    const getNotes = () => {
-        const loadingIndicator = document.querySelector("loading-indicator");
+    const notesData = 'https://notes-api.dicoding.dev/v2';
+
+    const getNotes = async () => {
+        const loadingIndicator = document.querySelector('loading-indicator');
         loadingIndicator.style.display = "block";
-    
-        let noteList = document.getElementById("note-list");
-    
-        fetch(`${notesData}/notes`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
+
+        try {
+            const response = await fetch(`${notesData}/notes`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             if (!response.ok) {
                 throw new Error('Failed to retrieve notes');
             }
-            return response.json();
-        })
-        .then(responseJson => {
-            renderNotes(responseJson.data, noteList); // Pass noteList as an argument
-        })
-        .catch(error => {
+            const responseJson = await response.json();
+            loadingIndicator.style.display = "none"; // Move the hiding of loading indicator here
+            return responseJson.data;
+        } catch (error) {
+            loadingIndicator.style.display = "none"; // Hide loading indicator in case of error
             showErrorResponse(error.message);
-        })
-        .finally(() => {
-            loadingIndicator.style.display = "none";
-        });
+            throw error;
+        }
     };
-    
-    
 
-    //createNotes
     const createNotes = async (id, title, body) => {
         try {
             const response = await fetch(`${notesData}/notes`, {
@@ -45,51 +37,73 @@ function dataAPI() {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    title: title, // Adjust payload format according to API docs
-                    body: body,   // Adjust payload format according to API docs
+                    title: title,
+                    body: body,
                 }),
             });
             if (!response.ok) {
                 const errorMessage = await response.text();
                 throw new Error(errorMessage);
             }
-            const addNotes = await response.json();
-            renderNotes([addNotes]);
-            // Assuming there's a function `showNotesToLocalStorage` defined somewhere
-            // showNotesToLocalStorage([addNotes]);
+            await getNotes(); // Ambil data catatan yang diperbarui setelah berhasil menambahkan catatan baru
         } catch (error) {
             showErrorResponse(error.message);
+            throw error;
         }
-    };
-    
+    };    
 
-    //deleteNotes
+//     const removeNotes = (note_Id) => {
+//     fetch(`${notesData}/notes/${note_Id}`, {
+//         method: 'DELETE',
+//     })
+//     .then(response => {
+//         if (!response.ok) {
+//             throw new Error('Failed to delete note');
+//         }
+//         return response.json();
+//     })
+//     .then(responseJson => {
+//         showResponseMessage(responseJson.message);
+//         // Panggil getNotes untuk mengambil data terbaru dari API setelah menghapus catatan
+//         return getNotes();
+//     })
+//     .then(notes => {
+//         // Setelah mendapatkan catatan yang diperbarui, perbarui tampilan
+//         displayNotes(notes);
+//     })
+//     .catch(error => {
+//         showResponseMessage(error.message);
+//     });
+// };
+
+
     const removeNotes = (note_Id) => {
         fetch(`${notesData}/notes/${note_Id}`, {
           method: 'DELETE',
         })
         .then(response => {
-          return response.json();
+            if (!response.ok) {
+                throw new Error('Failed to delete note');
+            }
+            return response.json();
         })
         .then(responseJson => {
-          showResponseMessage(responseJson.message);
-          getNotes();
+            showResponseMessage(responseJson.message);
         })
         .catch(error => {
-          showResponseMessage(error);
+            showResponseMessage(error.message);
         });
-      };
-    //archivedNotes
+    };
 
-    //unarchived
-    
-
-    const renderNotes = (notes, noteList) => {
+    const renderNotes = (notes) => {
+        let noteList = document.getElementById("note-list");
         if (!noteList) {
             console.error("Cannot find note list element.");
-            return; // Stop execution if noteList is null or undefined
+            return;
         }
     
+        noteList.innerHTML = ''; // Clear the note list before rendering new notes
+        
         if (notes && Array.isArray(notes)) {
             notes.forEach(note => {
                 const noteItem = document.createElement("div");
@@ -119,25 +133,19 @@ function dataAPI() {
     
     const showErrorResponse = (errorMessage) => {
         console.error(errorMessage);
-        alert(message);
+        alert(errorMessage);
     };
-    
 
     const showResponseMessage = (message = 'Reload Your Page.') => {
         alert(message);
-      };
+    };
       
-    //    // Define noteList outside DOMContentLoaded
-    //   console.log("noteList:", noteList);
-
     return {
         getNotes,
         createNotes,
         removeNotes,
-        renderNotes,
-        showResponseMessage
+        renderNotes
     };
-
 }
 
 export default dataAPI;
